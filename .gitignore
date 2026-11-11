@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+*.pyc
+data/
+scores/
+checkpoints/
+embeddings/
+.DS_Store
+.ipynb_checkpoints/
+logs/
