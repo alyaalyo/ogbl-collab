@@ -8,3 +8,4 @@ embeddings/
 .DS_Store
 .ipynb_checkpoints/
 logs/
+tmp/

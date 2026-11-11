@@ -16,7 +16,7 @@ def load_runs():
     for path in sorted(RESULTS_DIR.glob("*.jsonl")):
         if path.stem.endswith("_grid"):
             continue
-        for line in path.read_text().splitlines():
+        for line in path.read_text(encoding="utf-8").splitlines():
             r = json.loads(line)
             runs[(r["method"], r.get("seed", 0))] = r   # later lines override reruns of a seed
     return runs
@@ -40,7 +40,8 @@ def main():
                      f"| {m} | {len(rs)} | " + " | ".join(cells) + " | – |")
     table = "\n".join(lines)
     print(table)
-    (RESULTS_DIR / "summary.md").write_text("Hits@K × 100, mean ± std over seeds (sample std).\n\n" + table + "\n")
+    (RESULTS_DIR / "summary.md").write_text(
+        "Hits@K × 100, mean ± std over seeds (sample std).\n\n" + table + "\n", encoding="utf-8")
 
 
 if __name__ == "__main__":
