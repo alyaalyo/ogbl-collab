@@ -95,6 +95,7 @@ class TrainConfig:
     ckpt_every: int = 10            # epochs
     resume: bool = True
     log_every: int = 1
+    grad_clip: Optional[float] = None  # max grad norm, encoder and decoder clipped separately; None = off
 
 
 @dataclass
@@ -179,7 +180,12 @@ def train_link_predictor(
                 z = encoder() if trainable_encoder else z_fixed
                 loss = link_loss(decoder(z[pos[:, 0]], z[pos[:, 1]]),
                                  decoder(z[neg[:, 0]], z[neg[:, 1]]))
-                opt.zero_grad(); loss.backward(); opt.step()
+                opt.zero_grad(); loss.backward()
+                if cfg.grad_clip:
+                    nn.utils.clip_grad_norm_(decoder.parameters(), cfg.grad_clip)
+                    if trainable_encoder:
+                        nn.utils.clip_grad_norm_(encoder.parameters(), cfg.grad_clip)
+                opt.step()
                 total += loss.item() * pos.size(0); n += pos.size(0)
             if device.type == "cuda":
                 torch.cuda.synchronize()

@@ -14,10 +14,12 @@ KS = ("hits@20", "hits@50", "hits@100")
 def load_runs():
     runs = {}
     for path in sorted(RESULTS_DIR.glob("*.jsonl")):
-        if path.stem.endswith("_grid"):
+        if path.stem.endswith(("_grid", "_timing")):   # tuning / timing logs, not final runs
             continue
         for line in path.read_text(encoding="utf-8").splitlines():
             r = json.loads(line)
+            if "test" not in r:                       # not a finished run
+                continue
             runs[(r["method"], r.get("seed", 0))] = r   # later lines override reruns of a seed
     return runs
 
@@ -35,7 +37,9 @@ def main():
     for m in methods:
         rs = [r for (mm, _), r in sorted(runs.items()) if mm == m]
         spe = [r["seconds_per_epoch"] for r in rs if r.get("seconds_per_epoch")]
-        cells = [fmt([r["valid"][k] for r in rs]) for k in KS] + [fmt([r["test"][k] for r in rs]) for k in KS]
+        # "val as input" runs have no validation numbers (the 2018 positives are in the input graph)
+        val = [fmt([r["valid"][k] for r in rs]) if all("valid" in r for r in rs) else "–" for k in KS]
+        cells = val + [fmt([r["test"][k] for r in rs]) for k in KS]
         lines.append(f"| {m} | {len(rs)} | " + " | ".join(cells) + f" | {np.mean(spe):.1f} |" if spe else
                      f"| {m} | {len(rs)} | " + " | ".join(cells) + " | – |")
     table = "\n".join(lines)
