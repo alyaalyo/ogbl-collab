@@ -34,7 +34,7 @@ node2vec, then refreshes the reports again. Completed runs are skipped if their
 four score files exist. It refuses configuration mismatches or completed
 records with missing score files. A process lock prevents two queue instances.
 
-For the current launch, the queue is attached to the MLP process already
+The completed launch attached the queue to an MLP process already
 running in the background. `--wait_pid` is only for attaching to an existing
 `collab.reproduce` process; it should be omitted when restarting after a failure.
 The queue stops and records an error if its attached MLP exits without completing.
@@ -98,7 +98,35 @@ estimate affected by warm-up, threading, checkpoint overhead and concurrent
 workload, not an observed full-run duration. The sequential queue uses two threads.
 The probe never scores validation/test and discards its embeddings.
 
-At preparation time the MLP is running and node2vec is queued. No final local
-quality numbers are claimed yet. The score arrays and final metrics will be
-available only after their respective runs complete; inspect the status files
-for the current state, then review and commit the generated results.
+## Completed local runs
+
+Both runs and report generation completed on 27 November 2026. Each model has
+four score arrays, selected decoder weights, a training history and a metric
+record. The queue status is `complete`.
+
+| Method | Seed | Best / completed decoder epoch | Validation Hits@50 (%) | Test Hits@50 (%) |
+|---|---:|---:|---:|---:|
+| mlp_local | 0 | 122 / 142 | 16.67 | 12.62 |
+| node2vec_local | 0 | 10 / 30 | 59.15 | 49.21 |
+
+Both decoders stopped after 20 validation checks without improvement. Recorded
+MLP training time was 38.17 minutes. Node2vec embeddings took 56.71 minutes for
+three epochs, followed by 5.06 minutes of decoder training. Decoder training
+times exclude validation, final inference and checkpoint I/O; they are not
+end-to-end durations. The observed embedding duration supersedes the earlier
+short-probe estimate.
+
+These are independent local runs: the existing team records remain 14.24% for
+MLP and 47.72% for node2vec_e3 on test Hits@50. The differing results are retained
+under distinct names; matching seed/configuration does not establish identical
+outputs across execution environments. No cause for the differences is inferred
+from these two runs alone, and there is no multi-seed uncertainty estimate.
+
+The saved scores were checked against the official evaluator and exact inference
+from the saved weights in official pair order. The audit also checks validation
+selection, early stopping, bucket totals, source hashes and intersection indices;
+see [audit record](../results/local_reproduction_audit.json),
+[bucket tables](../results/buckets/summary.md) and
+[interpretation](analysis-role1.md#local-learned-model-comparison).
+Score arrays and weights remain local in the ignored artifact directories;
+the committed tables and audit hashes do not replace those files for teammates.
