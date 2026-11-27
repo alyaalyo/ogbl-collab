@@ -168,7 +168,10 @@ def train_link_predictor(
         log(f"resumed from {ckpt} at epoch {start_epoch}")
 
     epoch = start_epoch - 1
-    for epoch in range(start_epoch, cfg.max_epochs + 1):
+    # A checkpoint can be saved on the very epoch that triggers early stopping.
+    # Resuming it must restore/score the selected model without another update.
+    end_epoch = epoch if best_state is not None and bad_evals >= cfg.patience else cfg.max_epochs
+    for epoch in range(start_epoch, end_epoch + 1):
         encoder.train(); decoder.train()
         with Timer() as t:
             total, n = 0.0, 0

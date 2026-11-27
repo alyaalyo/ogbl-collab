@@ -1,0 +1,83 @@
+{
+  "models": {
+    "mlp_local": {
+      "seed": 0,
+      "best_epoch": 122,
+      "epochs_run": 142,
+      "metrics": {
+        "valid": {
+          "hits@20": 0.09233739431462619,
+          "hits@50": 0.166683310032621,
+          "hits@100": 0.2579721722921244
+        },
+        "test": {
+          "hits@20": 0.06004878154071964,
+          "hits@50": 0.12620604804765914,
+          "hits@100": 0.2060264629066028
+        }
+      },
+      "scores": {
+        "valid_pos": {
+          "count": 60084,
+          "sha256": "32beb44e47cda134279b76c4141eefcf72a7c57e5439c6ecf870a9ac32641c44"
+        },
+        "valid_neg": {
+          "count": 100000,
+          "sha256": "b6b0a291b9531bfa2116dccd954932eda13d13730a015cdf7566ca679bcd91b3"
+        },
+        "test_pos": {
+          "count": 46329,
+          "sha256": "cad2da9241b69e861dbb68c01c5c32a74c56fe627104a9d774c3e5a03b32331f"
+        },
+        "test_neg": {
+          "count": 100000,
+          "sha256": "360a2dba604155f152cb65f276d3ee30b4bf73e7c884c2dba8ce9784dbb2a3a6"
+        }
+      }
+    },
+    "node2vec_local": {
+      "seed": 0,
+      "best_epoch": 10,
+      "epochs_run": 30,
+      "metrics": {
+        "valid": {
+          "hits@20": 0.4423140936022901,
+          "hits@50": 0.5915385127488183,
+          "hits@100": 0.6420511284202117
+        },
+        "test": {
+          "hits@20": 0.36227848647715255,
+          "hits@50": 0.4920676034449265,
+          "hits@100": 0.5419715512961644
+        }
+      },
+      "scores": {
+        "valid_pos": {
+          "count": 60084,
+          "sha256": "a6fa13f8db281ae3e02a42b63ce20dde0d2f1041dc7a79445e991a99725f3181"
+        },
+        "valid_neg": {
+          "count": 100000,
+          "sha256": "4ab8e04b2ba8389a316884ef4c870bb98e9647bfc459646f711a9833494de6be"
+        },
+        "test_pos": {
+          "count": 46329,
+          "sha256": "204bf4af9d2e23b13cd463bc9d352c35df2ebb0b5d38c830778f38664135a184"
+        },
+        "test_neg": {
+          "count": 100000,
+          "sha256": "9921661c7b5cad1ee9c1469ed7798f0a2b820a23afe8b654c7b46eba04c10826"
+        }
+      }
+    }
+  },
+  "checks": [
+    "eight finite float32 arrays with official split lengths",
+    "all validation/test Hits@20/50/100 match official evaluator",
+    "all scores exactly match saved-weight inference in official pair order",
+    "best epochs agree with validation histories and early stopping",
+    "bucket source hashes match files",
+    "bucket partition totals, thresholds and intersection index cover",
+    "unchanged heuristic metrics and fixed valinput cohorts"
+  ]
+}

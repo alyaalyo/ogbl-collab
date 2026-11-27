@@ -28,6 +28,11 @@
       "status": "missing scores (metrics only)"
     },
     {
+      "method": "mlp_local",
+      "seeds": "0",
+      "status": "available"
+    },
+    {
       "method": "node2vec",
       "seeds": "-",
       "status": "missing scores"
@@ -41,6 +46,11 @@
       "method": "node2vec_e3",
       "seeds": "0",
       "status": "missing scores (metrics only)"
+    },
+    {
+      "method": "node2vec_local",
+      "seeds": "0",
+      "status": "available"
     },
     {
       "method": "sage",
@@ -72,11 +82,29 @@
     {
       "file": "cn_aa_seed0_test_neg.npy",
       "sha256": "0e73a5c9f754a423ad113dbf90c19eed4dbdda80182cbcf95f671abf729c9994"
+    },
+    {
+      "file": "mlp_local_seed0_test_pos.npy",
+      "sha256": "cad2da9241b69e861dbb68c01c5c32a74c56fe627104a9d774c3e5a03b32331f"
+    },
+    {
+      "file": "mlp_local_seed0_test_neg.npy",
+      "sha256": "360a2dba604155f152cb65f276d3ee30b4bf73e7c884c2dba8ce9784dbb2a3a6"
+    },
+    {
+      "file": "node2vec_local_seed0_test_pos.npy",
+      "sha256": "204bf4af9d2e23b13cd463bc9d352c35df2ebb0b5d38c830778f38664135a184"
+    },
+    {
+      "file": "node2vec_local_seed0_test_neg.npy",
+      "sha256": "9921661c7b5cad1ee9c1469ed7798f0a2b820a23afe8b654c7b46eba04c10826"
     }
   ],
   "detail_files": [
     "test_buckets.npz",
     "aa_seed0__cn_seed0.npz",
-    "aa_seed0__cn_aa_seed0.npz"
+    "aa_seed0__cn_aa_seed0.npz",
+    "aa_seed0__mlp_local_seed0.npz",
+    "aa_seed0__node2vec_local_seed0.npz"
   ]
 }

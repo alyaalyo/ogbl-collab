@@ -114,6 +114,17 @@ permutation within a score array.
 See [role 1 analysis notes](docs/analysis-role1.md) for observed results and
 remaining inputs needed for the final team comparison.
 
+### Generate missing learned-model scores locally
+
+`python -m collab.local_pipeline` runs/resumes the fixed midway seed-0 MLP and
+node2vec configurations sequentially on CPU and rebuilds the bucket reports
+after each. New methods are named `mlp_local` and `node2vec_local`, preserving
+the team's existing results. The queue writes progress to `logs/`, resumes
+decoder and skip-gram checkpoints, and does no tuning or automatic publication.
+See [local training instructions](docs/local-training.md) for settings, logs,
+outputs and the CPU timing estimate. These are independent single-seed runs;
+they do not provide GraphSAGE scores or the final ten-seed comparison.
+
 ## Repository layout
 
 ```

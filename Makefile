@@ -21,7 +21,7 @@ env:            ## pinned virtualenv (needs uv: https://docs.astral.sh/uv/)
 
 check:          ## fast toy-data tests of the shared code
 	$(RUN) collab.selftest
-	$(PY) -m unittest collab.test_heuristics collab.test_buckets collab.test_sage
+	$(PY) -m unittest collab.test_heuristics collab.test_buckets collab.test_sage collab.test_resume collab.test_local_pipeline
 
 midway:         ## midway-check runs: features-only MLP + node2vec (p=q=1, 3 skip-gram epochs), seed 0
 	$(RUN) collab.mlp --seeds 0 --device $(DEVICE)

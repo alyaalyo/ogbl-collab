@@ -2,7 +2,8 @@
 
 The CN/AA midway PR is merged. This follow-up adds CN with AA tie-breaking,
 test-only scoring with 2018 edges, and a working bucket-analysis pipeline.
-The full dataset was scored locally on CPU; no learned models were retrained.
+The full dataset was scored locally on CPU. Independent seed-0 MLP and node2vec
+runs subsequently supplied scores for the learned-model comparisons below.
 
 ## Implemented and run
 
@@ -87,20 +88,58 @@ sum to 46,329, bucket hits sum to overall hits, intersection index sets form a
 disjoint cover, baseline CN/AA metrics are unchanged, and valinput cohorts match
 the training-only cohorts exactly.
 
+## Local learned-model comparison
+
+The CPU reproduction queue completed both independent seed-0 runs. MLP selected
+epoch 122 and stopped at 142 (validation/test Hits@50: 16.67%/12.62%);
+node2vec selected decoder epoch 10 and stopped at 30 (59.15%/49.21%).
+Their results use `mlp_local` and `node2vec_local` names and do not overwrite the
+team's original aggregate metrics. See [run details](local-training.md).
+
+| Test cohort | Positives | AA Hits@50 (%) | MLP local (%) | Node2vec local (%) |
+|---|---:|---:|---:|---:|
+| All | 46,329 | 52.40 | 12.62 | 49.21 |
+| No common neighbours | 21,061 | 0.00 | 2.40 | 7.16 |
+| Exactly one common neighbour | 5,949 | 83.34 | 7.75 | 50.90 |
+| Minimum endpoint degree 1-5 | 17,489 | 41.13 | 7.39 | 33.06 |
+| Repeat pair | 16,965 | 97.07 | 26.96 | 95.49 |
+| New pair | 29,364 | 26.59 | 4.34 | 22.47 |
+
+AA leads node2vec by 3.19 percentage points overall in these runs, but their
+hit sets differ: 20,908 positives are hits for both, 3,369 for AA only and
+1,889 for node2vec only. Of node2vec's exclusive hits, 1,508 have no common
+neighbour and 381 have exactly one. Thus node2vec recovers some positives
+missed by local common-neighbour heuristics while losing more elsewhere.
+This observed complementarity is not an evaluated ensemble result.
+
+MLP has 577 hits outside AA's hit set, including 505 with no common neighbour.
+That shows the text-only model recovers some pairs missed by AA in this
+run, despite low overall quality. It is not evidence about isolated-node cold
+start: the degree-0 cohort remains empty. Repeat pairs remain substantially
+easier than new pairs for both local models.
+
+All eight local score arrays were checked for shape, finite float32 values,
+agreement with the official evaluator and exact reproduction from saved weights
+in official pair order. Validation histories agree with the selected epochs and
+early stopping. Bucket partitions and overlap artifacts pass the full-data
+consistency audit recorded in [local_reproduction_audit.json](../results/local_reproduction_audit.json).
+These comparisons use one seed each and do not estimate run-to-run variance.
+
 ## Remaining inputs and final-report limits
 
 The merged repository records GraphSAGE seed 0 at 48.13% test Hits@50 and its
 valinput variant at 54.69%, both within the proposal's reproduction ranges.
-However, only aggregate metrics are available locally for learned methods.
-There are no MLP/node2vec/GraphSAGE per-pair score arrays to analyse yet.
+The original teammate runs still have only aggregate metrics locally.
+Independent MLP/node2vec scores are now available; GraphSAGE scores are not.
 
-Accordingly, these outputs do **not** contain learned-model bucket values or
+Accordingly, these outputs contain local MLP/node2vec bucket values but no
 AA/GraphSAGE disagreements. Missing methods are explicitly listed in each
 report. A PDF with aggregate metrics cannot determine which pairs were hits.
 
 To finish the main cross-method deliverable, obtain:
 
-- `mlp_seed{k}_test_{pos,neg}.npy` and the chosen node2vec configuration's files;
+- final MLP/node2vec seed files and records (local seed 0 is now available;
+  the original teammate runs remain separate);
 - `sage_seed{k}_test_{pos,neg}.npy` and `sage_valinput_seed{k}_test_{pos,neg}.npy`;
 - final seed lists and corresponding result records/configurations (ten seeds,
   or the agreed fallback), plus the teammates' report sections.
