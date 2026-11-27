@@ -20,6 +20,7 @@ make env      # pinned virtualenv in .venv (needs uv)
 make check    # toy-data tests of the shared code, < 1 min
 make midway   # features-only MLP + node2vec (p=q=1, 3 epochs), seed 0, then the results table
 make midway-role1  # CN + AA on val/test, then the results table (CPU only)
+make role1-analysis  # CN/AA/CN+AA, test-only valinput, and bucket analysis of available scores
 make sage-probe  # role 3: time one GraphSAGE epoch (3 epochs), writes results/sage_timing.jsonl
 make sage-tune   # role 3: lr in {1e-3, 1e-2} on seed 0, validation only
 make all      # full pipeline: all methods, all seeds, node2vec grid, summary table
@@ -69,8 +70,49 @@ evaluator. Scores for all four official splits are written to
 The scorer intersects sparse adjacency rows for batches of requested pairs;
 `--batch_size 1024` reduces temporary memory if necessary. It never builds a
 dense all-pairs matrix or the full `A**2`. CN ties at the K-th negative count as
-misses, exactly as in the evaluator. CN with an AA tie-break, `val as input`, and
-bucket analysis are follow-up work after the midway CN/AA baseline.
+misses, exactly as in the evaluator.
+
+### Role 1 analysis
+
+On Windows, after setting up the environment above:
+
+```powershell
+.\.venv\Scripts\python.exe -u -m collab.heuristics --tie_break
+.\.venv\Scripts\python.exe -u -m collab.heuristics --valinput
+.\.venv\Scripts\python.exe -m collab.buckets
+.\.venv\Scripts\python.exe -m collab.buckets --valinput
+.\.venv\Scripts\python.exe -m collab.summarize
+```
+
+`cn_aa` breaks CN ties by AA. Its scores are exact float32 ordinal ranks of
+distinct `(CN, AA)` tuples, computed jointly over positive and negative queries
+within each evaluation split; labels are not used. Equal tuples still tie.
+Rank magnitudes cannot be compared across splits or candidate sets.
+
+`--valinput` adds 2018 edges for **test scoring only** and saves `cn_valinput`
+and `aa_valinput`; it does not evaluate validation positives that are now in
+the input graph. The default run still uses only training edges.
+
+Bucket reports are written to `results/buckets/` and `results/buckets_valinput/`:
+`summary.md`, per-seed and aggregated CSVs, overlap counts and an input manifest.
+All bucket definitions use the original training graph, keeping cohorts fixed
+between variants. Every method/seed uses its own threshold from all 100,000
+test negatives. Empty buckets are N/A; standard deviations require at least two
+seeds. Exact test-row memberships and AA disagreement indices are generated in
+`scores/buckets*/` as `.npz` files; `test_buckets.npz` maps row indices to pairs.
+
+Copy teammates' score files into `scores/`, or pass `--scores_dir PATH`.
+`--methods aa sage` restricts a report to those names. Missing scores are listed
+explicitly, while incomplete/invalid arrays and disagreements with existing
+result records fail the run. GraphSAGE analysis requires the available scores'
+mean test Hits@50 to meet the proposal's reproduction criterion (48.10 +/- 2,
+or 54.63 +/- 2 for valinput). A single reproduced seed remains preliminary.
+The arrays must follow the official OGB order: the manifest fingerprints that
+pair order and the supplied files, but aggregate metrics alone cannot detect a
+permutation within a score array.
+
+See [role 1 analysis notes](docs/analysis-role1.md) for observed results and
+remaining inputs needed for the final team comparison.
 
 ## Repository layout
 
@@ -87,6 +129,8 @@ collab/
                 --probe (timing), --tune (lr), "val as input" re-scoring without retraining
   test_sage.py  toy-graph checks for sage.py
   heuristics.py deterministic CN and AA, batched sparse scoring on the training graph
+  buckets.py    global-threshold bucket metrics, seed aggregation, AA hit intersections
+  test_buckets.py protocol tests for bucket analysis, tie-breaking, and valinput
   test_heuristics.py independent reference and score/evaluator checks on toy graphs
   summarize.py  results/*.jsonl -> results/summary.md (mean ± std over seeds)
   selftest.py   fast checks on toy graphs

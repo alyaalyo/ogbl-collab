@@ -1,0 +1,11 @@
+left,left_seed,right,right_seed,partition,bucket,size,both,left_only,right_only,neither
+aa_valinput,0,cn_valinput,0,all,all,46329,24472,4743,0,17114
+aa_valinput,0,cn_valinput,0,common_neighbors,0,21061,3155,1579,0,16327
+aa_valinput,0,cn_valinput,0,common_neighbors,1,5949,1998,3164,0,787
+aa_valinput,0,cn_valinput,0,common_neighbors,2-4,9466,9466,0,0,0
+aa_valinput,0,cn_valinput,0,common_neighbors,>=5,9853,9853,0,0,0
+aa_valinput,0,cn_valinput,0,min_degree,0,0,0,0,0,0
+aa_valinput,0,cn_valinput,0,min_degree,1-5,17489,6749,2498,0,8242
+aa_valinput,0,cn_valinput,0,min_degree,>5,28840,17723,2245,0,8872
+aa_valinput,0,cn_valinput,0,pair_history,repeat,16965,15521,1059,0,385
+aa_valinput,0,cn_valinput,0,pair_history,new,29364,8951,3684,0,16729

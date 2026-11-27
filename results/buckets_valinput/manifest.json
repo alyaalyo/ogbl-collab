@@ -1,0 +1,48 @@
+{
+  "graph_variant": "train_plus_valid",
+  "bucket_graph": "train_only",
+  "k": 50,
+  "threshold_rule": "strict > 50th highest global negative",
+  "train_pairs_sha256": "2ad3488078d80a6d8586652aa0e293635ace44d138aa932b6a63b58ac5d3ac54",
+  "test_pos_sha256": "ceca91cc49c318d2477c1f5856b20d3e6a5b373720ef63ca5dd7dac4da619159",
+  "test_neg_sha256": "3e1d783dffdb0c5ffbe6a04c75c16c9f3bc42d73d67cf3b1e4a921f3e90bf11a",
+  "status": [
+    {
+      "method": "aa_valinput",
+      "seeds": "0",
+      "status": "available"
+    },
+    {
+      "method": "cn_valinput",
+      "seeds": "0",
+      "status": "available"
+    },
+    {
+      "method": "sage_valinput",
+      "seeds": "0",
+      "status": "missing scores (metrics only)"
+    }
+  ],
+  "sources": [
+    {
+      "file": "aa_valinput_seed0_test_pos.npy",
+      "sha256": "20ced02ff2aebeb1ec68d9a1d4c1844d822f43330785b21820429b746fd71924"
+    },
+    {
+      "file": "aa_valinput_seed0_test_neg.npy",
+      "sha256": "de01d0212e3d77baf4b58a6d35574ec6a1f4516fc06394950aa2c6ef8cfc40e8"
+    },
+    {
+      "file": "cn_valinput_seed0_test_pos.npy",
+      "sha256": "b9502ada19d4b5ae580773d497b7e933f44e41bf5f7e577ac5063a11cf72802b"
+    },
+    {
+      "file": "cn_valinput_seed0_test_neg.npy",
+      "sha256": "53e5bba192b0b54721a7ae4df643797f14c56e87251845390135cc2487c2ba01"
+    }
+  ],
+  "detail_files": [
+    "test_buckets.npz",
+    "aa_valinput_seed0__cn_valinput_seed0.npz"
+  ]
+}

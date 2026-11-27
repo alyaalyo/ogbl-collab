@@ -11,7 +11,7 @@ SAGE_LR ?= 0.001
 # patience 50 (shared default is 20): validation Hits@50 is noisy epoch to epoch, 20 stopped runs too early
 SAGE_PATIENCE ?= 50
 
-.PHONY: all env check midway midway-role1 mlp node2vec-grid node2vec heuristics sage sage-probe sage-tune summary clean
+.PHONY: all env check midway midway-role1 role1-analysis buckets mlp node2vec-grid node2vec heuristics sage sage-probe sage-tune summary clean
 
 all: env check mlp node2vec-grid node2vec heuristics sage summary
 
@@ -21,7 +21,7 @@ env:            ## pinned virtualenv (needs uv: https://docs.astral.sh/uv/)
 
 check:          ## fast toy-data tests of the shared code
 	$(RUN) collab.selftest
-	$(PY) -m unittest collab.test_heuristics collab.test_sage
+	$(PY) -m unittest collab.test_heuristics collab.test_buckets collab.test_sage
 
 midway:         ## midway-check runs: features-only MLP + node2vec (p=q=1, 3 skip-gram epochs), seed 0
 	$(RUN) collab.mlp --seeds 0 --device $(DEVICE)
@@ -41,6 +41,17 @@ heuristics:     ## role 1 midway: deterministic CN and AA on the training-only g
 	$(RUN) collab.heuristics
 
 midway-role1: heuristics summary  ## role 1 preliminary results, no learned-model training
+
+role1-analysis:  ## deterministic baselines, test-only valinput, and available-score bucket reports
+	$(RUN) collab.heuristics --tie_break
+	$(RUN) collab.heuristics --valinput
+	$(RUN) collab.buckets
+	$(RUN) collab.buckets --valinput
+	$(RUN) collab.summarize
+
+buckets:        ## rebuild bucket reports from existing scores, without training
+	$(RUN) collab.buckets
+	$(RUN) collab.buckets --valinput
 
 sage-probe:     ## role 3: 3 epochs, times one epoch (decides whether the fallback is needed)
 	$(RUN) collab.sage --probe --device $(DEVICE)

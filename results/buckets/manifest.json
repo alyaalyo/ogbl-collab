@@ -1,0 +1,82 @@
+{
+  "graph_variant": "train_only",
+  "bucket_graph": "train_only",
+  "k": 50,
+  "threshold_rule": "strict > 50th highest global negative",
+  "train_pairs_sha256": "2ad3488078d80a6d8586652aa0e293635ace44d138aa932b6a63b58ac5d3ac54",
+  "test_pos_sha256": "ceca91cc49c318d2477c1f5856b20d3e6a5b373720ef63ca5dd7dac4da619159",
+  "test_neg_sha256": "3e1d783dffdb0c5ffbe6a04c75c16c9f3bc42d73d67cf3b1e4a921f3e90bf11a",
+  "status": [
+    {
+      "method": "aa",
+      "seeds": "0",
+      "status": "available"
+    },
+    {
+      "method": "cn",
+      "seeds": "0",
+      "status": "available"
+    },
+    {
+      "method": "cn_aa",
+      "seeds": "0",
+      "status": "available"
+    },
+    {
+      "method": "mlp",
+      "seeds": "0",
+      "status": "missing scores (metrics only)"
+    },
+    {
+      "method": "node2vec",
+      "seeds": "-",
+      "status": "missing scores"
+    },
+    {
+      "method": "node2vec_e1",
+      "seeds": "0",
+      "status": "missing scores (metrics only)"
+    },
+    {
+      "method": "node2vec_e3",
+      "seeds": "0",
+      "status": "missing scores (metrics only)"
+    },
+    {
+      "method": "sage",
+      "seeds": "0",
+      "status": "missing scores (metrics only)"
+    }
+  ],
+  "sources": [
+    {
+      "file": "aa_seed0_test_pos.npy",
+      "sha256": "0de19cf2c88bc42b39635328bf0c9e78f140b30aa0f44b1f684ed0201aa7a026"
+    },
+    {
+      "file": "aa_seed0_test_neg.npy",
+      "sha256": "e7223ae51271623edc8f1744845f87d8a74161bef34e16552cfd7abc2ed2993e"
+    },
+    {
+      "file": "cn_seed0_test_pos.npy",
+      "sha256": "b59ac29423f777073bed00dce35886f0ce25dd20ccb3931670ff98b84b4ff6d5"
+    },
+    {
+      "file": "cn_seed0_test_neg.npy",
+      "sha256": "b0f8bc32df996bd52a6077313a3c0edeb54683a5b0f2cf0f522b5340bfc10b98"
+    },
+    {
+      "file": "cn_aa_seed0_test_pos.npy",
+      "sha256": "6cf9f01b3810b8abdc8ba6b6936db739e68133750178402b87d6fe9c82caf74b"
+    },
+    {
+      "file": "cn_aa_seed0_test_neg.npy",
+      "sha256": "0e73a5c9f754a423ad113dbf90c19eed4dbdda80182cbcf95f671abf729c9994"
+    }
+  ],
+  "detail_files": [
+    "test_buckets.npz",
+    "aa_seed0__cn_seed0.npz",
+    "aa_seed0__cn_aa_seed0.npz"
+  ]
+}
