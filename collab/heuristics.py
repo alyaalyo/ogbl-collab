@@ -1,6 +1,8 @@
-"""Deterministic CN and Adamic-Adar on the shared training-only graph.
+"""Deterministic CN and Adamic-Adar, with optional CN/AA tie-breaking.
 
     python -m collab.heuristics
+    python -m collab.heuristics --tie_break
+    python -m collab.heuristics --valinput
 
 Only requested pairs are scored, in their original OGB order. Batched sparse
 row intersections avoid materialising A**2 or a dense [num_nodes, num_nodes]
@@ -70,34 +72,72 @@ class HeuristicScorer:
         return {"cn": cn, "aa": aa}
 
 
+def tie_break_scores(cn_scores, aa_scores):
+    """Encode lexicographic (CN, AA) order as exactly representable float32 ranks.
+
+    Rank distinct tuples jointly over positives and negatives of each split.
+    Labels are not used: this is an ordinal encoding, not fitting or tuning.
+    Equal tuples retain equal scores. No epsilon can vanish through rounding
+    or reverse the primary CN order. Ranks from different splits must not be
+    mixed, just as their negative pools must not be mixed.
+    """
+    result = {}
+    for part in ("valid", "test"):
+        keys = [f"{part}_pos", f"{part}_neg"]
+        if not any(key in cn_scores for key in keys):
+            continue
+        for key in keys:
+            if np.shape(cn_scores[key]) != np.shape(aa_scores[key]):
+                raise ValueError(f"CN and AA must have matching shapes for {key}")
+        cn = np.concatenate([cn_scores[key] for key in keys])
+        aa = np.concatenate([aa_scores[key] for key in keys])
+        if cn.shape != aa.shape or not np.isfinite(cn).all() or not np.isfinite(aa).all():
+            raise ValueError("CN and AA must be matching finite score arrays")
+        distinct, ranks = np.unique(np.column_stack([cn, aa]), axis=0, return_inverse=True)
+        if len(distinct) > 2**24:
+            raise ValueError("Too many distinct tuples for exact float32 ranks")
+        boundary = len(cn_scores[keys[0]])
+        ranks = ranks.astype(np.float32)
+        result[keys[0]], result[keys[1]] = ranks[:boundary], ranks[boundary:]
+    return result
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--batch_size", type=int, default=4096,
                         help="evaluation pairs per sparse batch (default: 4096)")
+    parser.add_argument("--tie_break", action="store_true", help="also save CN with AA tie-breaking")
+    parser.add_argument("--valinput", action="store_true",
+                        help="score TEST only on train + 2018 edges; no validation scoring")
     args = parser.parse_args(argv)
     if args.batch_size <= 0:
         parser.error("--batch_size must be positive")
 
     with Timer() as preparation:
         data = load_collab()
-        scorer = HeuristicScorer(data.edge_index, data.num_nodes)
+        scorer = HeuristicScorer(data.edge_index_val if args.valinput else data.edge_index, data.num_nodes)
+    eval_pairs = {key: pairs for key, pairs in data.eval_pairs.items()
+                  if not args.valinput or key.startswith("test_")}
     graph = {
         "num_nodes": data.num_nodes,
-        "unique_train_edges": int(scorer.adjacency.nnz // 2),
+        "unique_train_edges": len(data.train_pos),
+        "input_edges": int(scorer.adjacency.nnz // 2),
         "isolated_nodes": int(np.count_nonzero(scorer.degree == 0)),
-        "input": "train_only",
+        "input": "train_plus_valid" if args.valinput else "train_only",
     }
     print(f"Graph: {graph}", flush=True)
     scores = {"cn": {}, "aa": {}}
     split_seconds = {}
     with Timer() as scoring:
-        for split, pairs in data.eval_pairs.items():
+        for split, pairs in eval_pairs.items():
             with Timer() as elapsed:
                 values = scorer.score(pairs, args.batch_size)
             split_seconds[split] = round(elapsed.seconds, 3)
             for method, values_for_method in values.items():
                 scores[method][split] = values_for_method
             print(f"{split}: {len(pairs):,} pairs, {elapsed.seconds:.2f}s (CN + AA)", flush=True)
+        if args.tie_break:
+            scores["cn_aa"] = tie_break_scores(scores["cn"], scores["aa"])
 
     environment = {
         "python": platform.python_version(),
@@ -106,6 +146,8 @@ def main(argv=None):
                      for name in ("numpy", "scipy", "torch", "torch-geometric", "ogb", "pandas")},
     }
     for method, method_scores in scores.items():
+        encoding = "lexicographic_rank_per_split" if method == "cn_aa" else "raw"
+        method += "_valinput" if args.valinput else ""
         # Evaluate exactly the float32 arrays that downstream analysis loads.
         metrics = evaluate_scores(method_scores)
         save_scores(method, 0, method_scores)
@@ -115,14 +157,15 @@ def main(argv=None):
             "device": "cpu",
             "hparams": {"batch_size": args.batch_size},
             "graph": graph,
-            "split_sizes": {split: len(pairs) for split, pairs in data.eval_pairs.items()},
+            "score_encoding": encoding,
+            "split_sizes": {split: len(pairs) for split, pairs in eval_pairs.items()},
             "preparation_seconds": round(preparation.seconds, 3),
             "shared_scoring_seconds": round(scoring.seconds, 3),
             "shared_split_seconds": split_seconds,
             "environment": environment,
             **metrics,
         })
-        print(f"{method}: valid {metrics['valid']}  test {metrics['test']}", flush=True)
+        print(f"{method}: {metrics}", flush=True)
 
 
 if __name__ == "__main__":
