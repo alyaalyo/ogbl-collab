@@ -19,6 +19,9 @@ their macOS wheels do not load against Homebrew/uv Python.
 import argparse
 import itertools
 import math
+import hashlib
+from pathlib import Path
+import time
 
 import numpy as np
 import torch
@@ -89,12 +92,15 @@ def windows(walks: torch.Tensor, context_size: int) -> torch.Tensor:
 
 
 def train_node2vec(edge_index, num_nodes, dim=128, walk_length=40, context_size=10, walks_per_node=10,
-                   p=1.0, q=1.0, epochs=1, batch_nodes=256, lr=0.01, seed=0, device="cpu", log=print):
+                   p=1.0, q=1.0, epochs=1, batch_nodes=256, lr=0.01, seed=0, device="cpu", log=print,
+                   max_steps=None, ckpt_path=None, resume=False, ckpt_every=100):
     """Skip-gram with negative sampling.
 
     Dense embedding + Adam on every device: SparseAdam is unavailable on MPS and on
     CPU its sparse-gradient coalescing makes an epoch take ~100 min. Dense Adam on
     MPS/CUDA takes ~7 min/epoch (M-series) and is used everywhere so runs match.
+    ``max_steps`` caps batches per epoch for timing probes only. Production
+    calls leave it unset; probe embeddings must not be used as model results.
     """
     rng = np.random.default_rng(seed)
     walker = Walker(edge_index, num_nodes, p, q, rng)
@@ -102,12 +108,42 @@ def train_node2vec(edge_index, num_nodes, dim=128, walk_length=40, context_size=
     emb = nn.Embedding(num_nodes, dim).to(device)
     opt = torch.optim.Adam(emb.parameters(), lr=lr)
     steps = math.ceil(num_nodes / batch_nodes)
-    seconds = 0.0
-    for epoch in range(1, epochs + 1):
-        perm = rng.permutation(num_nodes)
-        total = 0.0
+    if max_steps is not None:
+        if max_steps <= 0:
+            raise ValueError("max_steps must be positive")
+        steps = min(steps, max_steps)
+    if ckpt_every <= 0:
+        raise ValueError("ckpt_every must be positive")
+    ckpt = Path(ckpt_path) if ckpt_path else None
+    signature = dict(num_nodes=num_nodes, dim=dim, walk_length=walk_length, context_size=context_size,
+                     walks_per_node=walks_per_node, p=p, q=q, epochs=epochs, batch_nodes=batch_nodes,
+                     lr=lr, seed=seed, device=str(device), max_steps=max_steps)
+    if ckpt:
+        signature["graph_sha256"] = hashlib.sha256(edge_index.numpy().tobytes()).hexdigest()
+    seconds, first_epoch, first_step, saved_perm, saved_loss = 0.0, 1, 0, None, 0.0
+    if ckpt and resume and ckpt.exists():
+        saved = torch.load(ckpt, map_location="cpu", weights_only=False)
+        if saved["signature"] != signature:
+            raise ValueError("node2vec checkpoint configuration/graph mismatch")
+        emb.load_state_dict(saved["embedding"])
+        opt.load_state_dict(saved["optimizer"])
+        rng.bit_generator.state = saved["rng_numpy"]
+        torch.set_rng_state(saved["rng_cpu"])
+        if torch.device(device).type == "cuda" and saved["rng_cuda"] is not None:
+            torch.cuda.set_rng_state_all(saved["rng_cuda"])
+        first_epoch, first_step = saved["epoch"], saved["next_step"]
+        saved_perm, saved_loss, seconds = saved["permutation"], saved["loss_sum"], saved["seconds"]
+        if first_step == steps:
+            first_epoch, first_step, saved_perm, saved_loss = first_epoch + 1, 0, None, 0.0
+        del saved
+        log(f"resumed node2vec at epoch {first_epoch}, step {first_step + 1}")
+    for epoch in range(first_epoch, epochs + 1):
+        perm = saved_perm if epoch == first_epoch and saved_perm is not None else rng.permutation(num_nodes)
+        total = saved_loss if epoch == first_epoch else 0.0
+        start_step = first_step if epoch == first_epoch else 0
+        segment_started = time.perf_counter()
         with Timer() as t:
-            for i in range(steps):
+            for i in range(start_step, steps):
                 start = np.repeat(perm[i * batch_nodes:(i + 1) * batch_nodes], walks_per_node)
                 pos = windows(torch.from_numpy(walker.walk(start, walk_length)), context_size).to(device)
                 neg = torch.randint(0, num_nodes, pos.shape, device=device)
@@ -117,6 +153,17 @@ def train_node2vec(edge_index, num_nodes, dim=128, walk_length=40, context_size=
                         - F.logsigmoid(-(h * hn).sum(-1)).mean())
                 opt.zero_grad(); loss.backward(); opt.step()
                 total += loss.item()
+                if ckpt and ((i + 1) % ckpt_every == 0 or i + 1 == steps):
+                    ckpt.parent.mkdir(parents=True, exist_ok=True)
+                    pending = ckpt.with_name(ckpt.name + ".tmp")
+                    torch.save({"signature": signature, "embedding": emb.state_dict(),
+                                "optimizer": opt.state_dict(), "rng_numpy": rng.bit_generator.state,
+                                "rng_cpu": torch.get_rng_state(),
+                                "rng_cuda": torch.cuda.get_rng_state_all() if torch.device(device).type == "cuda" else None,
+                                "epoch": epoch, "next_step": i + 1, "permutation": perm, "loss_sum": total,
+                                "seconds": seconds + time.perf_counter() - segment_started}, pending)
+                    pending.replace(ckpt)
+                    log(f"node2vec checkpoint epoch {epoch} step {i + 1}/{steps}")
                 if (i + 1) % 200 == 0:
                     log(f"  node2vec epoch {epoch} step {i + 1}/{steps} loss {total / (i + 1):.4f}")
         seconds += t.seconds
