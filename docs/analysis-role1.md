@@ -131,6 +131,8 @@ The merged repository records GraphSAGE seed 0 at 48.13% test Hits@50 and its
 valinput variant at 54.69%, both within the proposal's reproduction ranges.
 The original teammate runs still have only aggregate metrics locally.
 Independent MLP/node2vec scores are now available; GraphSAGE scores are not.
+A separate [local GraphSAGE run](local-sage.md) is now launched to obtain those
+scores. Its metrics and reproduction outcome are pending.
 
 Accordingly, these outputs contain local MLP/node2vec bucket values but no
 AA/GraphSAGE disagreements. Missing methods are explicitly listed in each

@@ -125,6 +125,12 @@ See [local training instructions](docs/local-training.md) for settings, logs,
 outputs and the CPU timing estimate. These are independent single-seed runs;
 they do not provide GraphSAGE scores or the final ten-seed comparison.
 
+For the missing GraphSAGE scores, `python -m collab.sage_local` runs/resumes an
+independent seed-0 CPU reproduction with sparse adjacency, per-epoch checkpoints
+and automatic bucket reports after the reproduction checks pass. See
+[local GraphSAGE instructions](docs/local-sage.md) for the fixed configuration,
+estimated runtime, artifacts and gate behavior.
+
 ## Repository layout
 
 ```

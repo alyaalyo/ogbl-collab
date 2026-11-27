@@ -136,7 +136,8 @@ def check_record(method, seed, metrics, records):
 
 
 def check_sage_reproduction(method, values):
-    reference = {"sage": 48.10, "sage_valinput": 54.63}.get(method)
+    reference = {"sage": 48.10, "sage_valinput": 54.63,
+                 "sage_local": 48.10, "sage_local_valinput": 54.63}.get(method)
     if reference is not None and abs(100 * np.mean(values) - reference) > 2:
         raise ValueError(f"{method}: mean test Hits@50 is outside {reference} +/- 2; analysis withheld")
 
